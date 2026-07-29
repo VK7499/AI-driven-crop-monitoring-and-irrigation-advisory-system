@@ -124,10 +124,13 @@ with st.sidebar:
 
     st.markdown("---")
     st.markdown("**API Status**")
-    owm_key  = st.secrets.get("OPENWEATHER_KEY", "")
-    or_key   = st.secrets.get("OPENROUTER_KEY", "")
-    cdse_id  = st.secrets.get("CDSE_CLIENT_ID", "")
-    cdse_sec = st.secrets.get("CDSE_CLIENT_SECRET", "")
+    try:
+        owm_key  = st.secrets.get("OPENWEATHER_KEY", "")
+        or_key   = st.secrets.get("OPENROUTER_KEY", "")
+        cdse_id  = st.secrets.get("CDSE_CLIENT_ID", "")
+        cdse_sec = st.secrets.get("CDSE_CLIENT_SECRET", "")
+    except Exception:
+        owm_key, or_key, cdse_id, cdse_sec = "", "", "", ""
     st.markdown(f"{'🟢' if (cdse_id and cdse_sec) else '🟡'} Copernicus (CDSE) Sentinel data")
     st.markdown(f"{'🟢' if owm_key else '🟡'} OpenWeatherMap")
     st.markdown(f"{'🟢' if or_key  else '🟡'} OpenRouter LLM")
