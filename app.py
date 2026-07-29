@@ -409,313 +409,188 @@ else:
     total_vol_m3 = water_balance['irr_required_mm'] * 10 * field_size_ha
     total_vol_liters = water_balance['irr_required_mm'] * 10000 * field_size_ha
 
-    st.markdown('<div class="section-header">📍 Field Overview & Status Summary</div>', unsafe_allow_html=True)
-    st.caption(f"📡 Data source: {scene.get('source', 'Copernicus CDSE Sentinel-1/2')}")
+    # 1. GIANT DIRECT STATUS BANNER
+    if water_balance['irr_required_mm'] <= 0:
+        status_bg = "linear-gradient(135deg, rgba(26, 70, 26, 0.9) 0%, rgba(13, 40, 13, 0.95) 100%)"
+        status_border = "#2ea043"
+        status_title = "🟢 SUFFICIENT MOISTURE — NO IRRIGATION NEEDED TODAY"
+        status_sub = f"Soil moisture is healthy. Rainfall of {water_balance['rainfall_8day']:.1f} mm forecast over the next 8 days."
+    else:
+        status_bg = "linear-gradient(135deg, rgba(70, 26, 26, 0.9) 0%, rgba(40, 13, 13, 0.95) 100%)"
+        status_border = "#f85149"
+        status_title = f"🚨 IRRIGATION REQUIRED: APPLY {water_balance['irr_required_mm']:.0f} mm OF WATER"
+        status_sub = f"Total water needed for your {field_size_ha} Ha field: {total_vol_m3:.0f} m³ ({total_vol_liters:,.0f} Liters) within 8 days."
 
+    st.markdown(f"""
+    <div style="background:{status_bg}; border:2px solid {status_border}; border-radius:14px; padding:22px 28px; margin-bottom:24px; box-shadow:0 8px 24px rgba(0,0,0,0.4);">
+        <div style="font-size:1.4rem; font-weight:800; color:#ffffff; margin-bottom:6px;">{status_title}</div>
+        <div style="font-size:1rem; color:#dce6f0;">{status_sub}</div>
+    </div>""", unsafe_allow_html=True)
+
+    # 2. CORE TOP METRICS
     k1, k2, k3, k4 = st.columns(4)
-    stress_badge = {"Low": "badge-low", "Medium": "badge-medium", "High": "badge-high"}.get(
-        result["stress_level"], "badge-info")
-    wb_badge_color = {"Sufficient": "badge-low", "Mild Deficit": "badge-medium",
-                      "Moderate Deficit": "badge-high", "Severe Deficit": "badge-high"}.get(
-        water_balance["status"], "badge-info")
-
     with k1:
         st.markdown(f"""<div class="metric-card">
             <div class="metric-label">🌾 Crop & Stage</div>
             <div class="metric-value" style="font-size:1.3rem;">{result['crop']}</div>
-            <span class="metric-badge badge-info">{result['stage']} (Stage {result['stage_num']}/4)</span>
+            <span class="metric-badge badge-info">{result['stage']} Phase</span>
         </div>""", unsafe_allow_html=True)
-
     with k2:
         st.markdown(f"""<div class="metric-card">
-            <div class="metric-label">💧 Irrigation Needed</div>
+            <div class="metric-label">💧 Target Irrigation</div>
             <div class="metric-value" style="font-size:1.3rem;">{water_balance['irr_required_mm']:.0f} mm</div>
-            <span class="metric-badge {wb_badge_color}">{water_balance['status']}</span>
+            <span class="metric-badge badge-medium">{water_balance['status']}</span>
         </div>""", unsafe_allow_html=True)
-
     with k3:
         st.markdown(f"""<div class="metric-card">
-            <div class="metric-label">🚰 Total Volume ({field_size_ha} ha)</div>
+            <div class="metric-label">🚰 Total Field Volume</div>
             <div class="metric-value" style="font-size:1.3rem;">{total_vol_m3:.0f} m³</div>
-            <span class="metric-badge badge-low">{total_vol_liters:,.0f} Liters</span>
+            <span class="metric-badge badge-low">{total_vol_liters:,.0f} L ({field_size_ha} ha)</span>
         </div>""", unsafe_allow_html=True)
-
     with k4:
         st.markdown(f"""<div class="metric-card">
-            <div class="metric-label">⚠️ Stress Status</div>
-            <div class="metric-value" style="font-size:1.3rem;">{result['stress_level']}</div>
-            <span class="metric-badge {stress_badge}">Index: {result['stress_index']:.2f}</span>
+            <div class="metric-label">🌤️ 8-Day Forecast Rain</div>
+            <div class="metric-value" style="font-size:1.3rem;">{water_balance['rainfall_8day']:.1f} mm</div>
+            <span class="metric-badge badge-info">Avg Temp {weather.get('avg_temp', 30):.0f}°C</span>
         </div>""", unsafe_allow_html=True)
 
     st.markdown("---")
 
-    # 3 Clean Tabs
-    tab1, tab2, tab3 = st.tabs([
-        "💡 1. Advisory & Action Plan",
-        "🗺️ 2. Satellite Field Maps",
-        "📊 3. Detailed Science & Soil Analytics"
-    ])
+    # 3. SIMPLE 2-COLUMN MAIN DASHBOARD
+    col_left, col_right = st.columns([1.1, 1.2])
 
-    # ================= TAB 1: ADVISORY & SCHEDULE =================
-    with tab1:
-        col_adv_left, col_adv_right = st.columns([1.2, 1])
+    with col_left:
+        st.markdown('<div class="section-header">🤖 Simple AI Action Plan</div>', unsafe_allow_html=True)
+        st.markdown(f"""
+        <div class="advisory-box">
+            <strong style="color:#7dce82; font-size:1.05rem;">Field Recommendation ({result['stage']} Phase)</strong><br><br>
+            {advisory_text}
+        </div>""", unsafe_allow_html=True)
 
-        with col_adv_left:
-            st.markdown('<div class="section-header">🤖 AI Stage-Aware Advisory</div>', unsafe_allow_html=True)
-            st.markdown(f"""
-            <div class="advisory-box">
-                <strong style="color:#7dce82; font-size:1.05rem;">Stage-Aware Recommendation — {result['stage']} Phase</strong><br><br>
-                {advisory_text}
-            </div>""", unsafe_allow_html=True)
+        st.markdown('<div class="section-header">📅 7-Day Simple Irrigation Schedule</div>', unsafe_allow_html=True)
+        cal_data = []
+        for i, wb_day in enumerate(water_balance["daily_breakdown"][:7]):
+            rain      = wb_day["rain"]
+            def_d     = wb_day["deficit"]
+            irrigate  = def_d > 2
+            amount    = round(def_d * 1.15, 0) if irrigate else 0
+            cal_data.append({
+                "Date":         wb_day["date"],
+                "Rain (mm)":    f"{rain:.1f}",
+                "Water Deficit":f"{def_d:.1f} mm",
+                "Irrigate?":    "YES 💧" if irrigate else "NO 🟢",
+                "Apply (mm)":   f"{amount:.0f} mm" if irrigate else "—",
+            })
+        df_cal = pd.DataFrame(cal_data)
+        st.dataframe(df_cal, use_container_width=True, hide_index=True)
 
-            report_text = f"""==================================================
+        report_text = f"""==================================================
 AGRISAT AI IRRIGATION & CROP ADVISORY REPORT
 ==================================================
 Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 Location:  Lat {lat:.4f}, Lon {lon:.4f} ({region})
 Field Size: {field_size_ha} Hectares
 
---------------------------------------------------
-1. FIELD STATUS & DIAGNOSTICS
---------------------------------------------------
+FIELD SUMMARY:
 Crop Type:         {result['crop']} ({result['crop_confidence']}% confidence)
 Growth Stage:      {result['stage']} (Stage {result['stage_num']}/4)
-Moisture Stress:   {result['stress_level']} (Index: {result['stress_index']:.2f})
-Vegetation (VCI):  {result.get('vci',0):.0f} / 100
-Soil Moisture (SMI):{result.get('smi',0):.0f} / 100
+Water Needed:      {water_balance['irr_required_mm']:.0f} mm
+Total Volume:      {total_vol_m3:.0f} m³ ({total_vol_liters:,.0f} Liters)
 
---------------------------------------------------
-2. WATER BALANCE (ETc MODEL)
---------------------------------------------------
-Crop Coefficient (Kc): {water_balance['kc']}
-8-Day ETc Demand:     {water_balance['etc_8day']:.1f} mm
-8-Day Forecast Rain:  {water_balance['rainfall_8day']:.1f} mm
-Water Deficit:        {water_balance['deficit_mm']:.1f} mm
-Irrigation Needed:    {water_balance['irr_required_mm']:.0f} mm
-Total Volume Needed:  {total_vol_m3:.0f} m³ ({total_vol_liters:,.0f} Liters)
-
---------------------------------------------------
-3. AI STAGE-AWARE RECOMMENDATION
---------------------------------------------------
+RECOMMENDATION:
 {advisory_text}
-
-==================================================
-AgriSat AI Crop Monitoring System
 ==================================================
 """
-            st.download_button(
-                label="📥 Export Full Advisory Report (.txt)",
-                data=report_text,
-                file_name=f"AgriSat_Advisory_{result['crop']}_{datetime.now().strftime('%Y%m%d')}.txt",
-                mime="text/plain"
-            )
+        st.download_button(
+            label="📥 Download Summary Report (.txt)",
+            data=report_text,
+            file_name=f"AgriSat_Advisory_{result['crop']}_{datetime.now().strftime('%Y%m%d')}.txt",
+            mime="text/plain"
+        )
 
-            st.markdown('<div class="section-header">⚠️ Active Field Alerts</div>', unsafe_allow_html=True)
-            alerts = []
-            vci_val = result.get("vci", 50)
-            if result["stress_level"] == "High":
-                alerts.append(("Critical Moisture Stress", f"VCI={vci_val:.0f}/100 with high SAR stress — immediate irrigation required."))
-            if vci_val < 35:
-                alerts.append(("VCI Below Drought Threshold", f"VCI={vci_val:.0f} < 35 indicates vegetation drought stress (Kogan method)."))
-            if result["stage"] == "Flowering":
-                alerts.append(("Critical Growth Phase", "Flowering stage: water deficit now causes permanent yield loss."))
-            if water_balance["deficit_mm"] > 30:
-                alerts.append(("Severe Water Deficit", f"{water_balance['deficit_mm']:.0f} mm deficit over 8 days — apply {water_balance['irr_required_mm']:.0f} mm urgently."))
-            if weather.get("rain_next_48h", 0) < 5:
-                alerts.append(("Dry Spell Ahead", "Less than 5mm rain expected in 48h. Plan irrigation accordingly."))
-            if not alerts:
-                alerts.append(("No Critical Alerts", "Field conditions are within normal range."))
-            for title_a, body_a in alerts:
-                st.markdown(f"""
-                <div class="alert-box">
-                    <strong>{title_a}</strong><br>
-                    <span style="font-size:0.85rem;">{body_a}</span>
-                </div>""", unsafe_allow_html=True)
+    with col_right:
+        st.markdown('<div class="section-header">🗺️ Field Health & Moisture Satellite Maps</div>', unsafe_allow_html=True)
+        m_col1, m_col2 = st.columns(2)
 
-        with col_adv_right:
-            st.markdown('<div class="section-header">💧 8-Day Water Balance (ETc Model)</div>', unsafe_allow_html=True)
-            wb_status_icon = {"Sufficient": "🟢", "Mild Deficit": "🟡", "Moderate Deficit": "🟠", "Severe Deficit": "🔴"}.get(water_balance["status"], "⚪")
-            st.markdown(f"""
-            <div class="wb-box">
-                <strong style="color:#58a6ff; font-size:1.05rem;">{wb_status_icon} {water_balance['status']}</strong><br><br>
-                <table style="width:100%; color:#cdd9e5; font-size:0.9rem;">
-                    <tr><td>Crop coefficient (Kc)</td>          <td><b>{water_balance['kc']}</b></td></tr>
-                    <tr><td>ET₀ (Hargreaves, daily avg)</td>    <td><b>{water_balance['et0_daily']:.1f} mm/day</b></td></tr>
-                    <tr><td>ETc = Kc × ET₀ (8-day total)</td>  <td><b>{water_balance['etc_8day']:.1f} mm</b></td></tr>
-                    <tr><td>Rainfall (8-day forecast)</td>       <td><b>{water_balance['rainfall_8day']:.1f} mm</b></td></tr>
-                    <tr><td>Soil moisture credit</td>            <td><b>{water_balance['soil_credit_mm']:.0f} mm</b></td></tr>
-                    <tr><td style="color:#f85149;">Water Deficit</td>
-                        <td><b style="color:#f85149;">{water_balance['deficit_mm']:.1f} mm</b></td></tr>
-                    <tr><td style="color:#e3b341;">Irrigation Required</td>
-                        <td><b style="color:#e3b341;">{water_balance['irr_required_mm']:.0f} mm</b></td></tr>
-                    <tr><td style="color:#7dce82; padding-top:6px;">Total Vol. ({field_size_ha} ha)</td>
-                        <td style="padding-top:6px;"><b style="color:#7dce82;">{total_vol_m3:.0f} m³ ({total_vol_liters:,.0f} L)</b></td></tr>
-                </table>
-            </div>""", unsafe_allow_html=True)
-
-            st.markdown('<div class="section-header">📅 8-Day Irrigation Calendar</div>', unsafe_allow_html=True)
-            cal_data = []
-            for i, wb_day in enumerate(water_balance["daily_breakdown"]):
-                rain      = wb_day["rain"]
-                def_d     = wb_day["deficit"]
-                irrigate  = def_d > 2
-                amount    = round(def_d * 1.15, 0) if irrigate else 0
-                cal_data.append({
-                    "Date":         wb_day["date"],
-                    "Rain (mm)":    rain,
-                    "Deficit":      f"{def_d:.1f} mm",
-                    "Irrigate?":    "YES" if irrigate else "NO",
-                    "Apply (mm)":   f"{amount:.0f}" if irrigate else "—",
-                })
-            df_cal = pd.DataFrame(cal_data)
-            st.dataframe(df_cal, use_container_width=True, hide_index=True)
-
-            st.markdown('<div class="section-header">🌤️ 7-Day Weather Forecast</div>', unsafe_allow_html=True)
-            if weather.get("daily"):
-                cols = st.columns(min(7, len(weather["daily"])))
-                for i, (col, day) in enumerate(zip(cols, weather["daily"][:7])):
-                    with col:
-                        st.markdown(f"""
-                        <div class="weather-card">
-                            <div style="font-size:0.7rem; color:#8b949e;">{day['date']}</div>
-                            <div style="font-size:1.3rem;">{day['icon']}</div>
-                            <div class="weather-temp">{day['temp']}°</div>
-                            <div style="color:#58a6ff;">{day['rain']}mm</div>
-                        </div>""", unsafe_allow_html=True)
-
-    # ================= TAB 2: SATELLITE MAPS =================
-    with tab2:
-        col_m1, col_m2 = st.columns(2)
-
-        with col_m1:
-            st.markdown('<div class="section-header">🌿 NDVI Vegetation Heatmap (Sentinel-2)</div>', unsafe_allow_html=True)
+        with m_col1:
             ndvi_map = scene["ndvi_map"]
-            fig2, ax2 = plt.subplots(figsize=(6, 4))
+            fig2, ax2 = plt.subplots(figsize=(5, 3.5))
             fig2.patch.set_facecolor("#161b22")
             ax2.set_facecolor("#161b22")
             cmap = mcolors.LinearSegmentedColormap.from_list("ndvi", ["#3a0d0d", "#9e6a03", "#2ea043", "#56d364"])
             im = ax2.imshow(ndvi_map, cmap=cmap, vmin=0, vmax=1, aspect="auto")
-            cbar = plt.colorbar(im, ax=ax2, fraction=0.03, pad=0.02)
+            cbar = plt.colorbar(im, ax=ax2, fraction=0.04, pad=0.02)
             cbar.ax.yaxis.set_tick_params(color="#8b949e")
-            cbar.set_label("NDVI", color="#8b949e", fontsize=9)
-            plt.setp(cbar.ax.yaxis.get_ticklabels(), color="#8b949e", fontsize=8)
-            ax2.set_title(f"NDVI Map — {result['crop']} ({result['stage']})", color="#e6edf3", fontsize=10, pad=10)
+            cbar.set_label("NDVI", color="#8b949e", fontsize=8)
+            ax2.set_title("🌿 Vegetation Health (NDVI)", color="#e6edf3", fontsize=9, pad=8)
             ax2.set_xticks([]); ax2.set_yticks([])
             for spine in ax2.spines.values(): spine.set_edgecolor("#30363d")
             st.pyplot(fig2, use_container_width=True)
             plt.close()
 
-        with col_m2:
-            st.markdown('<div class="section-header">📡 Cloud-Penetrating Moisture Map (Sentinel-1 SAR)</div>', unsafe_allow_html=True)
+        with m_col2:
             sar_map = scene["sar_map"]
-            fig3, ax3 = plt.subplots(figsize=(6, 4))
+            fig3, ax3 = plt.subplots(figsize=(5, 3.5))
             fig3.patch.set_facecolor("#161b22")
             ax3.set_facecolor("#161b22")
             im3 = ax3.imshow(sar_map, cmap="Blues", aspect="auto")
-            cbar3 = plt.colorbar(im3, ax=ax3, fraction=0.03, pad=0.02)
+            cbar3 = plt.colorbar(im3, ax=ax3, fraction=0.04, pad=0.02)
             cbar3.ax.yaxis.set_tick_params(color="#8b949e")
-            cbar3.set_label("Backscatter (dB)", color="#8b949e", fontsize=9)
-            plt.setp(cbar3.ax.yaxis.get_ticklabels(), color="#8b949e", fontsize=8)
-            ax3.set_title("Sentinel-1 SAR VV — All-Weather Moisture Signal", color="#e6edf3", fontsize=10, pad=10)
+            cbar3.set_label("dB", color="#8b949e", fontsize=8)
+            ax3.set_title("📡 Soil Moisture (Radar SAR)", color="#e6edf3", fontsize=9, pad=8)
             ax3.set_xticks([]); ax3.set_yticks([])
             for spine in ax3.spines.values(): spine.set_edgecolor("#30363d")
             st.pyplot(fig3, use_container_width=True)
             plt.close()
 
-        st.markdown('<div class="section-header">💧 Command Area Irrigation Grid Map</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-header">💧 Command Area Irrigation Zone Map</div>', unsafe_allow_html=True)
         adv_colors = ["#1a3a1a", "#9e6a03", "#c74a00", "#8b0000"]
-        adv_labels = ["No irrigation needed", "Light (≤20 mm)", "Moderate (20–40 mm)", "Urgent (>40 mm)"]
+        adv_labels = ["No irrigation", "Light (≤20 mm)", "Moderate (20–40 mm)", "Urgent (>40 mm)"]
         adv_cmap   = mcolors.ListedColormap(adv_colors)
 
-        fig_map, ax_map = plt.subplots(figsize=(10, 3.8))
+        fig_map, ax_map = plt.subplots(figsize=(8, 3.2))
         fig_map.patch.set_facecolor("#161b22")
         ax_map.set_facecolor("#161b22")
         im_map = ax_map.imshow(advisory_grid, cmap=adv_cmap, vmin=0, vmax=3, aspect="auto", interpolation="nearest")
-        ax_map.set_title(f"8-Day Irrigation Zone Map — {result['crop']} Field Grid", color="#e6edf3", fontsize=10, pad=10)
-        ax_map.set_xlabel("East →", color="#8b949e", fontsize=8)
-        ax_map.set_ylabel("North ↑", color="#8b949e", fontsize=8)
-        ax_map.tick_params(colors="#8b949e")
+        ax_map.set_title("Grid-Level Irrigation Command Map", color="#e6edf3", fontsize=9, pad=8)
+        ax_map.set_xticks([]); ax_map.set_yticks([])
         for spine in ax_map.spines.values(): spine.set_edgecolor("#30363d")
         patches = [mpatches.Patch(facecolor=c, label=l) for c, l in zip(adv_colors, adv_labels)]
-        ax_map.legend(handles=patches, loc="lower right", facecolor="#161b22", edgecolor="#30363d", labelcolor="#cdd9e5", fontsize=8)
+        ax_map.legend(handles=patches, loc="lower right", facecolor="#161b22", edgecolor="#30363d", labelcolor="#cdd9e5", fontsize=7.5)
         st.pyplot(fig_map, use_container_width=True)
         plt.close()
 
-    # ================= TAB 3: DETAILED ANALYTICS =================
-    with tab3:
-        col_s1, col_s2 = st.columns([1.2, 1])
+    # 4. COLLAPSIBLE ADVANCED TECHNICAL METRICS
+    st.markdown("---")
+    with st.expander("🔬 View Technical Satellite & Soil Analytics (For Experts & Judges)", expanded=False):
+        st.markdown('<div class="section-header">📈 Phenology & Growth Stage Progress</div>', unsafe_allow_html=True)
+        stages    = ["Germination", "Vegetative", "Flowering", "Harvest-Ready"]
+        stage_num = result["stage_num"]
+        fig, ax = plt.subplots(figsize=(8, 1.2))
+        fig.patch.set_facecolor("#161b22")
+        ax.set_facecolor("#161b22")
+        colors = ["#2ea043" if i < stage_num else "#21262d" for i in range(4)]
+        for i, (s, c) in enumerate(zip(stages, colors)):
+            ax.barh(0, 1, left=i, color=c, height=0.5, edgecolor="#30363d", linewidth=0.8)
+            ax.text(i + 0.5, 0, s, ha="center", va="center", color="#e6edf3" if i < stage_num else "#484f58", fontsize=8.5, fontweight="bold" if i == stage_num - 1 else "normal")
+        ax.set_xlim(0, 4)
+        ax.axis("off")
+        st.pyplot(fig, use_container_width=True)
+        plt.close()
 
-        with col_s1:
-            st.markdown('<div class="section-header">📈 Phenology & Growth Stage Progress</div>', unsafe_allow_html=True)
-            stages    = ["Germination", "Vegetative", "Flowering", "Harvest-Ready"]
-            stage_num = result["stage_num"]
-            ph        = result.get("phenology", {})
-
-            fig, ax = plt.subplots(figsize=(8, 1.3))
-            fig.patch.set_facecolor("#161b22")
-            ax.set_facecolor("#161b22")
-            colors = ["#2ea043" if i < stage_num else "#21262d" for i in range(4)]
-            for i, (s, c) in enumerate(zip(stages, colors)):
-                ax.barh(0, 1, left=i, color=c, height=0.5, edgecolor="#30363d", linewidth=0.8)
-                ax.text(i + 0.5, 0, s, ha="center", va="center", color="#e6edf3" if i < stage_num else "#484f58", fontsize=8.5, fontweight="bold" if i == stage_num - 1 else "normal")
-            ax.set_xlim(0, 4)
-            ax.axis("off")
-            st.pyplot(fig, use_container_width=True)
-            plt.close()
-
-            st.markdown('<div class="section-header">📉 Biweekly NDVI Season Trend</div>', unsafe_allow_html=True)
-            dates      = pd.date_range(end=datetime.now(), periods=12, freq="2W")
-            ndvi_trend = scene.get("ndvi_trend", np.random.uniform(0.2, 0.75, 12))
-            ndvi_trend[-1] = result["ndvi"]
-            fig4, ax4 = plt.subplots(figsize=(8, 3.2))
-            fig4.patch.set_facecolor("#161b22")
-            ax4.set_facecolor("#161b22")
-            ax4.plot(dates, ndvi_trend, color="#7dce82", linewidth=2, marker="o", markersize=4, markerfacecolor="#56d364")
-            ax4.fill_between(dates, ndvi_trend, alpha=0.15, color="#7dce82")
-            ax4.axhline(0.3, color="#9e6a03", linestyle="--", linewidth=0.8, alpha=0.7, label="Stress threshold (0.30)")
-            ax4.set_ylabel("NDVI", color="#8b949e", fontsize=9)
-            ax4.set_ylim(0, 1)
-            ax4.tick_params(colors="#8b949e", labelsize=8)
-            for spine in ax4.spines.values(): spine.set_edgecolor("#30363d")
-            ax4.legend(facecolor="#161b22", edgecolor="#30363d", labelcolor="#8b949e", fontsize=8)
-            ax4.grid(axis="y", color="#21262d", linewidth=0.5)
-            plt.xticks(rotation=30, color="#8b949e")
-            st.pyplot(fig4, use_container_width=True)
-            plt.close()
-
-        with col_s2:
-            st.markdown('<div class="section-header">📊 Stress Gauges (VCI & SMI)</div>', unsafe_allow_html=True)
+        col_t1, col_t2 = st.columns(2)
+        with col_t1:
             vci_val = result.get("vci", 50)
             smi_val = result.get("smi", 50)
-            fig_idx, axes = plt.subplots(1, 2, figsize=(6, 2))
-            fig_idx.patch.set_facecolor("#161b22")
-            for ax, val, label, note in [
-                (axes[0], vci_val, "VCI", "Vegetation Condition Index"),
-                (axes[1], smi_val, "SMI", "Soil Moisture Index"),
-            ]:
-                ax.set_facecolor("#161b22")
-                bar_color = "#56d364" if val >= 50 else ("#e3b341" if val >= 25 else "#f85149")
-                ax.barh(0, val, color=bar_color, height=0.4)
-                ax.barh(0, 100 - val, left=val, color="#21262d", height=0.4)
-                ax.text(50, 0.55, f"{label} = {val:.0f}/100", ha="center", color="#e6edf3", fontsize=10, fontweight="bold")
-                ax.text(50, -0.55, note, ha="center", color="#8b949e", fontsize=7.5)
-                ax.set_xlim(0, 100)
-                ax.set_ylim(-0.8, 0.8)
-                ax.axis("off")
-            plt.tight_layout()
-            st.pyplot(fig_idx, use_container_width=True)
-            plt.close()
+            st.markdown(f"**Vegetation Condition Index (VCI):** {vci_val:.0f}/100")
+            st.markdown(f"**Soil Moisture Index (SMI):** {smi_val:.0f}/100")
+            st.markdown(f"**Crop Coefficient (Kc):** {water_balance['kc']}")
+            st.markdown(f"**ET₀ (Hargreaves):** {water_balance['et0_daily']:.1f} mm/day")
 
-            st.markdown('<div class="section-header">🌱 Soil Classification Profile</div>', unsafe_allow_html=True)
-            st.markdown(f"""
-            <div class="metric-card" style="text-align:left;">
-                <div style="color:#8b949e; font-size:0.8rem; margin-bottom:4px;">WRB Soil Type</div>
-                <div style="color:#e6edf3; font-size:1.1rem; font-weight:600;">{soil.get('type','Unknown')}</div>
-                <div style="color:#8b949e; font-size:0.8rem; margin-top:10px;">Water Retention Capacity</div>
-                <div style="color:#58a6ff; font-weight:600;">{soil.get('water_retention','Moderate')}</div>
-                <div style="color:#8b949e; font-size:0.8rem; margin-top:8px;">Drainage Rating</div>
-                <div style="color:#58a6ff; font-weight:600;">{soil.get('drainage','Moderate')}</div>
-            </div>""", unsafe_allow_html=True)
+        with col_t2:
+            st.markdown(f"**Soil Classification:** {soil.get('type','Unknown')}")
+            st.markdown(f"**Soil Water Retention:** {soil.get('water_retention','Moderate')}")
+            st.markdown(f"**Drainage Class:** {soil.get('drainage','Moderate')}")
         def_d     = wb_day["deficit"]
         irrigate  = def_d > 2
         amount    = round(def_d * 1.15, 0) if irrigate else 0
