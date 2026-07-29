@@ -20,67 +20,212 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
-    html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
-    .main { background: #0f1117; }
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;600;700&display=swap');
+    
+    html, body, [class*="css"] {
+        font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+    }
+    
+    .main {
+        background: radial-gradient(circle at 20% 20%, #111a2e 0%, #090d16 100%);
+    }
 
+    /* Hero Banner Styling */
     .hero-banner {
-        background: linear-gradient(135deg, #1a2f1a 0%, #0d1f0d 50%, #0a1628 100%);
-        border: 1px solid #2d5a27; border-radius: 12px;
-        padding: 28px 32px; margin-bottom: 24px;
+        background: linear-gradient(135deg, rgba(26, 47, 26, 0.8) 0%, rgba(13, 31, 13, 0.9) 50%, rgba(10, 22, 40, 0.95) 100%);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(125, 206, 130, 0.25);
+        border-radius: 16px;
+        padding: 32px 36px;
+        margin-bottom: 28px;
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        position: relative;
+        overflow: hidden;
     }
-    .hero-title { font-size: 2rem; font-weight: 700; color: #7dce82; margin: 0 0 6px 0; letter-spacing: -0.5px; }
-    .hero-sub   { color: #8fa89b; font-size: 0.95rem; margin: 0; }
+    .hero-banner::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(125, 206, 130, 0.08) 0%, transparent 60%);
+        pointer-events: none;
+    }
+    .hero-title {
+        font-size: 2.2rem;
+        font-weight: 800;
+        background: linear-gradient(90deg, #7dce82 0%, #56d364 50%, #58a6ff 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin: 0 0 8px 0;
+        letter-spacing: -0.8px;
+    }
+    .hero-sub {
+        color: #9eb5a7;
+        font-size: 1rem;
+        font-weight: 400;
+        margin: 0;
+        line-height: 1.6;
+    }
 
+    /* Metric Cards */
     .metric-card {
-        background: #161b22; border: 1px solid #30363d;
-        border-radius: 10px; padding: 18px 20px; text-align: center;
+        background: rgba(22, 27, 34, 0.75);
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(48, 54, 61, 0.8);
+        border-radius: 12px;
+        padding: 20px 22px;
+        text-align: center;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 4px 14px rgba(0,0,0,0.2);
     }
-    .metric-label { color: #8b949e; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
-    .metric-value { color: #e6edf3; font-size: 1.5rem; font-weight: 700; }
-    .metric-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; margin-top: 6px; }
-    .badge-low    { background: #1a3a1a; color: #56d364; border: 1px solid #2ea043; }
-    .badge-medium { background: #3a2a00; color: #e3b341; border: 1px solid #9e6a03; }
-    .badge-high   { background: #3a0d0d; color: #f85149; border: 1px solid #da3633; }
-    .badge-info   { background: #0d2137; color: #58a6ff; border: 1px solid #1f6feb; }
+    .metric-card:hover {
+        transform: translateY(-4px);
+        border-color: rgba(125, 206, 130, 0.4);
+        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45), 0 0 15px rgba(125, 206, 130, 0.15);
+    }
+    .metric-label {
+        color: #8b949e;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1.2px;
+        margin-bottom: 8px;
+    }
+    .metric-value {
+        color: #f0f6fc;
+        font-size: 1.6rem;
+        font-weight: 800;
+        letter-spacing: -0.5px;
+    }
+    
+    /* Badges */
+    .metric-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        margin-top: 8px;
+        letter-spacing: 0.3px;
+    }
+    .badge-low    { background: rgba(26, 58, 26, 0.8); color: #56d364; border: 1px solid #2ea043; }
+    .badge-medium { background: rgba(58, 42, 0, 0.8);  color: #e3b341; border: 1px solid #9e6a03; }
+    .badge-high   { background: rgba(58, 13, 13, 0.8); color: #f85149; border: 1px solid #da3633; }
+    .badge-info   { background: rgba(13, 33, 55, 0.8); color: #58a6ff; border: 1px solid #1f6feb; }
 
+    /* Advisory & Weather Boxes */
     .advisory-box {
-        background: linear-gradient(135deg, #0d2137 0%, #0a1f0a 100%);
-        border: 1px solid #1f6feb; border-left: 4px solid #7dce82;
-        border-radius: 10px; padding: 20px 24px; margin: 16px 0;
-        color: #cdd9e5; font-size: 0.95rem; line-height: 1.7;
+        background: linear-gradient(135deg, rgba(13, 33, 55, 0.85) 0%, rgba(10, 31, 10, 0.85) 100%);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(31, 111, 235, 0.4);
+        border-left: 5px solid #7dce82;
+        border-radius: 12px;
+        padding: 22px 26px;
+        margin: 18px 0;
+        color: #dce6f0;
+        font-size: 0.96rem;
+        line-height: 1.75;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.3);
     }
     .alert-box {
-        background: #1c1008; border: 1px solid #9e6a03; border-left: 4px solid #e3b341;
-        border-radius: 10px; padding: 16px 20px; margin: 10px 0;
-        color: #cdd9e5; font-size: 0.9rem;
+        background: rgba(28, 16, 8, 0.85);
+        border: 1px solid #9e6a03;
+        border-left: 5px solid #e3b341;
+        border-radius: 10px;
+        padding: 18px 22px;
+        margin: 12px 0;
+        color: #dce6f0;
+        font-size: 0.92rem;
+        transition: transform 0.2s ease;
+    }
+    .alert-box:hover {
+        transform: translateX(4px);
     }
     .wb-box {
-        background: #0d1f2d; border: 1px solid #1f6feb; border-left: 4px solid #58a6ff;
-        border-radius: 10px; padding: 16px 20px; margin: 10px 0;
-        color: #cdd9e5; font-size: 0.9rem;
+        background: rgba(13, 31, 45, 0.85);
+        border: 1px solid #1f6feb;
+        border-left: 5px solid #58a6ff;
+        border-radius: 12px;
+        padding: 20px 24px;
+        margin: 14px 0;
+        color: #dce6f0;
+        font-size: 0.92rem;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.25);
     }
     .section-header {
-        color: #7dce82; font-size: 1rem; font-weight: 600;
-        text-transform: uppercase; letter-spacing: 1.5px;
-        margin: 24px 0 14px 0; padding-bottom: 8px; border-bottom: 1px solid #21262d;
+        color: #7dce82;
+        font-size: 1.05rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1.8px;
+        margin: 28px 0 16px 0;
+        padding-bottom: 10px;
+        border-bottom: 1px solid rgba(48, 54, 61, 0.6);
+        display: flex;
+        align-items: center;
+        gap: 8px;
     }
     .weather-card {
-        background: #161b22; border: 1px solid #30363d;
-        border-radius: 8px; padding: 12px; text-align: center;
-        font-size: 0.82rem; color: #8b949e;
+        background: rgba(22, 27, 34, 0.8);
+        border: 1px solid rgba(48, 54, 61, 0.8);
+        border-radius: 10px;
+        padding: 14px 10px;
+        text-align: center;
+        font-size: 0.85rem;
+        color: #8b949e;
+        transition: all 0.2s ease;
     }
-    .weather-temp { font-size: 1.2rem; font-weight: 700; color: #e6edf3; }
+    .weather-card:hover {
+        border-color: #58a6ff;
+        transform: translateY(-2px);
+    }
+    .weather-temp {
+        font-size: 1.3rem;
+        font-weight: 800;
+        color: #f0f6fc;
+        margin: 4px 0;
+    }
 
-    div[data-testid="stSidebar"] { background: #0d1117; border-right: 1px solid #21262d; }
-    .stButton > button {
-        background: #238636; color: white; border: none;
-        border-radius: 8px; font-weight: 600; padding: 10px 24px;
-        width: 100%; font-size: 0.95rem;
+    /* Streamlit UI Controls Overrides */
+    div[data-testid="stSidebar"] {
+        background: #0b0f17;
+        border-right: 1px solid rgba(33, 38, 45, 0.8);
     }
-    .stButton > button:hover { background: #2ea043; }
-    div[data-testid="stSelectbox"] label,
-    div[data-testid="stNumberInput"] label { color: #8b949e !important; font-size: 0.85rem; }
+    .stButton > button {
+        background: linear-gradient(135deg, #238636 0%, #2ea043 100%);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-weight: 700;
+        padding: 12px 28px;
+        width: 100%;
+        font-size: 1rem;
+        letter-spacing: 0.3px;
+        box-shadow: 0 4px 14px rgba(46, 160, 67, 0.3);
+        transition: all 0.25s ease;
+    }
+    .stButton > button:hover {
+        background: linear-gradient(135deg, #2ea043 0%, #3fb950 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(46, 160, 67, 0.45);
+    }
+    .stDownloadButton > button {
+        background: linear-gradient(135deg, #1f6feb 0%, #388bfd 100%);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-weight: 700;
+        padding: 12px 24px;
+        width: 100%;
+        box-shadow: 0 4px 14px rgba(31, 111, 235, 0.3);
+    }
+    .stDownloadButton > button:hover {
+        background: linear-gradient(135deg, #388bfd 0%, #58a6ff 100%);
+        transform: translateY(-2px);
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -113,11 +258,12 @@ with st.sidebar:
         lat = st.number_input("Latitude",  value=18.0, format="%.4f")
         lon = st.number_input("Longitude", value=79.58, format="%.4f")
 
-    st.markdown("**Crop Settings**")
+    st.markdown("**Crop & Field Settings**")
     crop_override = st.selectbox("Override Crop Type (optional)",
                                   ["Auto-detect", "Rice", "Wheat", "Cotton", "Maize", "Soybean"])
     scene_date = st.selectbox("Sentinel Scene",
                                ["Latest Available", "June 2025", "March 2025", "December 2024"])
+    field_size_ha = st.slider("Field Area (Hectares)", min_value=0.5, max_value=50.0, value=2.5, step=0.5)
 
     st.markdown("---")
     analyze = st.button("Analyze Field")
@@ -384,6 +530,51 @@ else:
             {advisory_text}
         </div>""", unsafe_allow_html=True)
 
+        total_vol_m3 = water_balance['irr_required_mm'] * 10 * field_size_ha
+        total_vol_liters = water_balance['irr_required_mm'] * 10000 * field_size_ha
+
+        report_text = f"""==================================================
+AGRISAT AI IRRIGATION & CROP ADVISORY REPORT
+==================================================
+Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+Location:  Lat {lat:.4f}, Lon {lon:.4f} ({region})
+Field Size: {field_size_ha} Hectares
+
+--------------------------------------------------
+1. FIELD STATUS & DIAGNOSTICS
+--------------------------------------------------
+Crop Type:         {result['crop']} ({result['crop_confidence']}% confidence)
+Growth Stage:      {result['stage']} (Stage {result['stage_num']}/4)
+Moisture Stress:   {result['stress_level']} (Index: {result['stress_index']:.2f})
+Vegetation (VCI):  {result.get('vci',0):.0f} / 100
+Soil Moisture (SMI):{result.get('smi',0):.0f} / 100
+
+--------------------------------------------------
+2. WATER BALANCE (ETc MODEL)
+--------------------------------------------------
+Crop Coefficient (Kc): {water_balance['kc']}
+8-Day ETc Demand:     {water_balance['etc_8day']:.1f} mm
+8-Day Forecast Rain:  {water_balance['rainfall_8day']:.1f} mm
+Water Deficit:        {water_balance['deficit_mm']:.1f} mm
+Irrigation Needed:    {water_balance['irr_required_mm']:.0f} mm
+Total Volume Needed:  {total_vol_m3:.0f} m³ ({total_vol_liters:,.0f} Liters)
+
+--------------------------------------------------
+3. AI STAGE-AWARE RECOMMENDATION
+--------------------------------------------------
+{advisory_text}
+
+==================================================
+AgriSat AI Crop Monitoring System
+==================================================
+"""
+        st.download_button(
+            label="📥 Export Advisory Report (.txt)",
+            data=report_text,
+            file_name=f"AgriSat_Advisory_{result['crop']}_{datetime.now().strftime('%Y%m%d')}.txt",
+            mime="text/plain"
+        )
+
         st.markdown('<div class="section-header">8-Day Water Balance (ETc Model)</div>',
                     unsafe_allow_html=True)
         wb_status_icon = {"Sufficient": "🟢", "Mild Deficit": "🟡",
@@ -402,6 +593,8 @@ else:
                     <td><b style="color:#f85149;">{water_balance['deficit_mm']:.1f} mm</b></td></tr>
                 <tr><td style="color:#e3b341;">Irrigation Required</td>
                     <td><b style="color:#e3b341;">{water_balance['irr_required_mm']:.0f} mm</b></td></tr>
+                <tr><td style="color:#7dce82; padding-top:6px;">Total Vol. ({field_size_ha} ha)</td>
+                    <td style="padding-top:6px;"><b style="color:#7dce82;">{total_vol_m3:.0f} m³ ({total_vol_liters:,.0f} L)</b></td></tr>
             </table>
         </div>""", unsafe_allow_html=True)
 
