@@ -235,21 +235,41 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("**Field Location**")
 
-    region = st.selectbox("Quick Select Region", [
+    region_options = [
         "Custom",
+        "Pune, Maharashtra (Sugarcane & Vegetables)",
+        "Sambhajinagar / Aurangabad, MH (Cotton & Maize)",
+        "Nashik, Maharashtra (Grapes & Onion)",
+        "Ahmednagar, Maharashtra (Sugarcane & Onion)",
+        "Solapur, Maharashtra (Pomegranate & Jowar)",
+        "Jalgaon, Maharashtra (Banana & Cotton)",
+        "Latur, Maharashtra (Soybean & Pulses)",
+        "Nanded, Maharashtra (Cotton & Soybean)",
+        "Kolhapur, Maharashtra (Sugarcane & Rice)",
+        "Nagpur, Maharashtra (Orange & Cotton)",
         "Warangal, Telangana (Rice)",
-        "Nashik, Maharashtra (Cotton)",
         "Ludhiana, Punjab (Wheat)",
         "Coimbatore, Tamil Nadu (Maize)",
         "Guntur, Andhra Pradesh (Chilli)",
-    ])
+    ]
+
+    region = st.selectbox("Quick Select Region", region_options)
 
     region_coords = {
-        "Warangal, Telangana (Rice)":      (18.0, 79.58),
-        "Nashik, Maharashtra (Cotton)":     (20.0, 73.78),
-        "Ludhiana, Punjab (Wheat)":         (30.9, 75.85),
-        "Coimbatore, Tamil Nadu (Maize)":   (11.0, 76.96),
-        "Guntur, Andhra Pradesh (Chilli)":  (16.3, 80.44),
+        "Pune, Maharashtra (Sugarcane & Vegetables)":      (18.5204, 73.8567),
+        "Sambhajinagar / Aurangabad, MH (Cotton & Maize)": (19.8762, 75.3433),
+        "Nashik, Maharashtra (Grapes & Onion)":            (20.0059, 73.7898),
+        "Ahmednagar, Maharashtra (Sugarcane & Onion)":      (19.0952, 74.7496),
+        "Solapur, Maharashtra (Pomegranate & Jowar)":      (17.6599, 75.9064),
+        "Jalgaon, Maharashtra (Banana & Cotton)":           (21.0077, 75.5626),
+        "Latur, Maharashtra (Soybean & Pulses)":           (18.4088, 76.5604),
+        "Nanded, Maharashtra (Cotton & Soybean)":          (19.1383, 77.3210),
+        "Kolhapur, Maharashtra (Sugarcane & Rice)":        (16.7050, 74.2433),
+        "Nagpur, Maharashtra (Orange & Cotton)":           (21.1458, 79.0882),
+        "Warangal, Telangana (Rice)":                      (18.0000, 79.5800),
+        "Ludhiana, Punjab (Wheat)":                        (30.9000, 75.8500),
+        "Coimbatore, Tamil Nadu (Maize)":                  (11.0000, 76.9600),
+        "Guntur, Andhra Pradesh (Chilli)":                 (16.3000, 80.4400),
     }
 
     if region != "Custom":
