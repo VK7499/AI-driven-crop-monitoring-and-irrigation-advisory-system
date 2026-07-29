@@ -281,8 +281,16 @@ with st.sidebar:
     st.markdown("**Crop & Field Settings**")
     crop_override = st.selectbox("Override Crop Type (optional)",
                                   ["Auto-detect", "Rice", "Wheat", "Cotton", "Maize", "Soybean"])
-    scene_date = st.selectbox("Sentinel Scene",
-                               ["Latest Available", "June 2025", "March 2025", "December 2024"])
+    
+    months_list = [
+        "Latest Available (Live)",
+        "July 2026", "June 2026", "May 2026", "April 2026", "March 2026", "February 2026", "January 2026",
+        "December 2025", "November 2025", "October 2025", "September 2025", "August 2025", "July 2025",
+        "June 2025", "May 2025", "April 2025", "March 2025", "February 2025", "January 2025",
+        "December 2024", "November 2024", "October 2024", "September 2024", "August 2024", "July 2024",
+        "June 2024", "May 2024", "April 2024", "March 2024", "February 2024", "January 2024"
+    ]
+    scene_date = st.selectbox("Sentinel Scene (Month & Year)", months_list)
     field_size_ha = st.slider("Field Area (Hectares)", min_value=0.5, max_value=50.0, value=2.5, step=0.5)
 
     st.markdown("---")
@@ -358,7 +366,7 @@ if not analyze:
 
 else:
     with st.spinner("Loading Sentinel scene and running AI analysis..."):
-        scene      = load_sentinel_scene(lat, lon)
+        scene      = load_sentinel_scene(lat, lon, scene_date)
         crop_input = None if crop_override == "Auto-detect" else crop_override
         result     = predict_crop_status(scene, crop_input)
 

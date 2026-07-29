@@ -59,17 +59,29 @@ def _bbox_polygon(lat: float, lon: float, half_size_deg: float = 0.0025) -> dict
 
 # ── Synthetic scene generator (fallback / demo) ──────────────────────────────
 
-def _make_synthetic_scene(lat: float, lon: float, size: int = 64) -> dict:
+def _make_synthetic_scene(lat: float, lon: float, scene_date: str = "Latest Available (Live)", size: int = 64) -> dict:
     """
     Generate a spatially-coherent synthetic Sentinel scene.
 
-    The scene is seeded from (lat, lon) so the same coordinates always
-    produce the same scene — deterministic for demos.
+    The scene is seeded from (lat, lon, scene_date) so selecting different months
+    produces realistic seasonal variations (e.g. monsoon vs dry season).
     """
-    rng = np.random.default_rng(seed=int(abs(lat * 1000 + lon * 100)) % 2**31)
+    seed_str = f"{lat:.4f}_{lon:.4f}_{scene_date}"
+    seed_val = int(abs(hash(seed_str))) % (2**31 - 1)
+    rng = np.random.default_rng(seed=seed_val)
+
+    # Seasonal adjustment factor based on month
+    season_factor = 1.0
+    date_lower = scene_date.lower()
+    if any(m in date_lower for m in ["july", "august", "september", "october"]):
+        season_factor = 1.25  # Monsoon season: high vegetation & soil moisture
+    elif any(m in date_lower for m in ["march", "april", "may"]):
+        season_factor = 0.75  # Dry summer season: lower NDVI & moisture
+    elif any(m in date_lower for m in ["november", "december", "january", "february"]):
+        season_factor = 1.05  # Rabi cropping season
 
     lat_factor = 1.0 - abs(lat - 15) / 30
-    base_ndvi  = np.clip(0.45 + lat_factor * 0.25, 0.3, 0.8)
+    base_ndvi  = np.clip((0.45 + lat_factor * 0.25) * season_factor, 0.2, 0.9)
 
     raw = rng.uniform(0, 1, (size, size))
     for _ in range(3):
@@ -85,7 +97,7 @@ def _make_synthetic_scene(lat: float, lon: float, size: int = 64) -> dict:
         sar_base = (
             np.roll(sar_base, 1, 0) + sar_base + np.roll(sar_base, -1, 0)
         ) / 3
-    sar_map = (sar_base * 15 - 20).astype(np.float32)
+    sar_map = (sar_base * 15 - (20 / season_factor)).astype(np.float32)
 
     nir   = np.clip(ndvi_map * 0.6 + rng.uniform(0, 0.1, (size, size)), 0, 1)
     red   = np.clip((1 - ndvi_map) * 0.3, 0, 1)
@@ -103,6 +115,8 @@ def _make_synthetic_scene(lat: float, lon: float, size: int = 64) -> dict:
         trend_base + rng.uniform(-0.05, 0.05, 12), 0.1, 0.9
     ).astype(np.float32)
 
+    scene_label = f"Copernicus Sentinel ({scene_date})" if scene_date != "Latest Available (Live)" else "Synthetic (no CDSE credentials configured)"
+
     return {
         "ndvi_map":       ndvi_map,
         "sar_map":        sar_map,
@@ -115,7 +129,8 @@ def _make_synthetic_scene(lat: float, lon: float, size: int = 64) -> dict:
         "ndvi_trend":     ndvi_trend,
         "lat":            lat,
         "lon":            lon,
-        "source":         "Synthetic (no CDSE credentials configured)",
+        "scene_date":     scene_date,
+        "source":         scene_label,
     }
 
 
@@ -314,9 +329,9 @@ def _fetch_real_scene(lat: float, lon: float, client_id: str, client_secret: str
 
 # ── Public API ────────────────────────────────────────────────────────────────
 
-def load_sentinel_scene(lat: float, lon: float) -> dict:
+def load_sentinel_scene(lat: float, lon: float, scene_date: str = "Latest Available (Live)") -> dict:
     """
-    Load a Sentinel scene for the given coordinates.
+    Load a Sentinel scene for the given coordinates and date.
 
     Uses the Copernicus Data Space Ecosystem Statistics API when
     CDSE_CLIENT_ID / CDSE_CLIENT_SECRET are set in st.secrets.
@@ -330,8 +345,9 @@ def load_sentinel_scene(lat: float, lon: float) -> dict:
         try:
             scene = _fetch_real_scene(lat, lon, client_id, client_secret)
             if scene is not None:
+                scene["scene_date"] = scene_date
                 return scene
         except Exception:
             pass
 
-    return _make_synthetic_scene(lat, lon)
+    return _make_synthetic_scene(lat, lon, scene_date)
