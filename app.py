@@ -371,7 +371,7 @@ else:
         result     = predict_crop_status(scene, crop_input)
 
     with st.spinner("Fetching weather forecast and soil data..."):
-        weather = get_weather_forecast(lat, lon)
+        weather = get_weather_forecast(lat, lon, scene_date)
         soil    = get_soil_type(lat, lon)
 
     with st.spinner("Computing ETc water balance and deficit map..."):

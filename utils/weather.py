@@ -32,37 +32,53 @@ def _icon_emoji(icon_code: str) -> str:
     return OWM_ICONS.get(prefix, "🌡️")
 
 
-def _fallback_forecast(lat: float, lon: float) -> dict:
+def _fallback_forecast(lat: float, lon: float, scene_date: str = "Latest Available (Live)") -> dict:
     """
     Deterministic synthetic forecast when no API key is provided.
-    Seeded from coordinates so the same location always gives the same forecast.
+    Seeded from coordinates and scene_date so selecting different months gives month-accurate weather.
     """
-    rng = random.Random(int(abs(lat * 100 + lon * 10)))
+    seed_str = f"{lat:.4f}_{lon:.4f}_{scene_date}"
+    rng = random.Random(int(abs(hash(seed_str))))
     daily = []
     today = datetime.now()
+    
+    date_lower = scene_date.lower()
+    # Seasonal climate parameters based on month
+    if any(m in date_lower for m in ["july", "august", "september", "october"]):
+        temp_min, temp_max = 26.0, 31.0
+        rain_min, rain_max = 12.0, 45.0  # Monsoon rain
+        icons_pool = ["🌧️", "🌦️", "⛈️", "☁️"]
+    elif any(m in date_lower for m in ["march", "april", "may"]):
+        temp_min, temp_max = 34.0, 42.0
+        rain_min, rain_max = 0.0, 3.0    # Hot dry summer
+        icons_pool = ["☀️", "🌤️", "☀️"]
+    else:
+        temp_min, temp_max = 24.0, 32.0
+        rain_min, rain_max = 1.0, 15.0   # Winter / Rabi season
+        icons_pool = ["☀️", "🌤️", "⛅"]
+
     for i in range(7):
         d     = today + timedelta(days=i)
-        rain  = rng.uniform(0, 25)
-        temp  = rng.uniform(28, 38)
+        rain  = rng.uniform(rain_min, rain_max)
+        temp  = rng.uniform(temp_min, temp_max)
         humid = rng.uniform(45, 85)
-        icons = ["☀️", "🌤️", "🌦️", "⛅", "🌧️"]
         daily.append({
             "date":  d.strftime("%b %d"),
             "temp":  round(temp, 1),
             "rain":  round(rain, 1),
             "humid": round(humid, 1),
-            "icon":  rng.choice(icons),
+            "icon":  rng.choice(icons_pool),
         })
     total_rain = sum(d["rain"] for d in daily[:2])
     return {
         "daily":          daily,
         "rain_next_48h":  round(total_rain, 1),
         "avg_temp":       round(sum(d["temp"] for d in daily) / 7, 1),
-        "source":         "Synthetic fallback (add OPENWEATHER_KEY for live data)",
+        "source":         f"Seasonal Climate Model ({scene_date})" if scene_date != "Latest Available (Live)" else "Synthetic fallback",
     }
 
 
-def get_weather_forecast(lat: float, lon: float) -> dict:
+def get_weather_forecast(lat: float, lon: float, scene_date: str = "Latest Available (Live)") -> dict:
     """
     Returns 7-day daily forecast dict.
 
@@ -71,7 +87,7 @@ def get_weather_forecast(lat: float, lon: float) -> dict:
     api_key = st.secrets.get("OPENWEATHER_KEY", "")
 
     if not api_key:
-        return _fallback_forecast(lat, lon)
+        return _fallback_forecast(lat, lon, scene_date)
 
     try:
         # One Call API 3.0
